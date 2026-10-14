@@ -39,34 +39,39 @@ public class HomeController {
     @GetMapping("/newUser")
     public String newUser(Model model) {
 
-        List<String> authorities = da.getAuthorities();
-        model.addAttribute("authorities", authorities);
+        // Public registration must never choose privileged roles.
+        model.addAttribute("authorities", List.of("ROLE_USER"));
         return "new-user";
     }
 
     @PostMapping("/addUser")
-    public String addUser(@RequestParam String userName, @RequestParam String password,
-            @RequestParam String[] authorities, Model model, RedirectAttributes redirectAttrs) {
+    public String addUser(@RequestParam String userName,
+            @RequestParam String password, Model model,
+            RedirectAttributes redirectAttrs) {
 
-        List<GrantedAuthority> authorityList = new ArrayList<>();
-
-        for (String authority : authorities) {
-            authorityList.add(new SimpleGrantedAuthority(authority));
-        }
-        String encodedPassword = passwordEncoder.encode(password);
-
-        // check existing user
-        if (jdbcUserDetailsManager.userExists(userName)) {
-            model.addAttribute("errorMsg", "User name already Exists. Try a different user name.");
-            model.addAttribute("authorities", authorityList);
+        String normalizedUserName = userName.trim();
+        if (normalizedUserName.isEmpty() || password.isBlank()) {
+            model.addAttribute("errorMsg", "Username and password are required.");
+            model.addAttribute("authorities", List.of("ROLE_USER"));
             return "new-user";
-        } else {
-            User user = new User(userName, encodedPassword, authorityList);
-
-            jdbcUserDetailsManager.createUser(user);
-            redirectAttrs.addFlashAttribute("userAddedMsg", "User succesfully added!");
-            return "redirect:/";
         }
+
+        if (jdbcUserDetailsManager.userExists(normalizedUserName)) {
+            model.addAttribute("errorMsg",
+                    "User name already exists. Try a different user name.");
+            model.addAttribute("authorities", List.of("ROLE_USER"));
+            return "new-user";
+        }
+
+        String encodedPassword = passwordEncoder.encode(password);
+        User user = new User(
+                normalizedUserName,
+                encodedPassword,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        jdbcUserDetailsManager.createUser(user);
+        redirectAttrs.addFlashAttribute("userAddedMsg", "User successfully added!");
+        return "redirect:/";
     }
 
     @GetMapping("/")
@@ -101,8 +106,15 @@ public class HomeController {
     @GetMapping("/{gameId}/reviews/{id}")
     public String editReview(@PathVariable Long gameId, @PathVariable Long id, Model model) {
         Review review = da.getReview(id);
+        BoardGame boardgame = da.getBoardGame(gameId);
+
+        if (review == null || boardgame == null
+            || !gameId.equals(review.getGameId())) {
+        return "redirect:/";
+    }
+
         model.addAttribute("review", review);
-        model.addAttribute("boardgame", da.getBoardGame(gameId));
+        model.addAttribute("boardgame", boardgame);
         return "secured/addReview";
     }
 
@@ -136,7 +148,12 @@ public class HomeController {
 
     @GetMapping("/deleteReview/{id}")
     public String deleteReview(@PathVariable Long id) {
-        Long gameId = da.getReview(id).getGameId();
+        Review review = da.getReview(id);
+
+        if (review == null) {
+        return "redirect:/";
+    }
+        Long gameId = review.getGameId();
         int returnValue = da.deleteReview(id);
         System.out.println("return value is: " + returnValue);
         return "redirect:/" + gameId + "/reviews";

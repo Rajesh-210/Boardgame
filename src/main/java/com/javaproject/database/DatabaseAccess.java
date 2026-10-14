@@ -28,14 +28,7 @@ public class DatabaseAccess {
     private NamedParameterJdbcTemplate jdbc;
 
     public List<String> getAuthorities() {
-
-        MapSqlParameterSource namedParameters = new MapSqlParameterSource();
-
-        String query = "SELECT DISTINCT authority FROM authorities";
-
-        List<String> authorities = jdbc.queryForList(query, namedParameters, String.class);
-
-        return authorities;
+        return List.of("ROLE_USER", "ROLE_MANAGER");
     }
 
     public List<BoardGame> getBoardGames() {

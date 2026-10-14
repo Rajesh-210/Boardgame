@@ -7,12 +7,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.LinkedMultiValueMap;
@@ -56,7 +58,9 @@ class TestController {
         requestParams.add("gameType", "Party Game");
 
         int origSize = da.getBoardGames().size();
-        mockMvc.perform(post("/boardgameAdded").params(requestParams))
+        mockMvc.perform(post("/boardgameAdded").params(requestParams)
+                .with(user("testmanager").roles("MANAGER"))
+                .with(csrf()))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/"))
                 .andDo(print());
@@ -75,7 +79,9 @@ class TestController {
 
         review.setText("Edited text");
 
-        mockMvc.perform(post("/reviewAdded").flashAttr("review", review))
+        mockMvc.perform(post("/reviewAdded").flashAttr("review", review)
+                .with(user("testmanager").roles("MANAGER"))
+                .with(csrf()))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/" + review.getGameId() + "/reviews"));
 
@@ -93,7 +99,9 @@ class TestController {
 
         int origSize = reviews.size();
 
-        mockMvc.perform(get("/deleteReview/{id}", reviewId))
+        mockMvc.perform(get("/deleteReview/{id}", reviewId)
+                .with(user("testmanager").roles("MANAGER"))
+                .with(csrf()))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/" + boardgameId + "/reviews"));
 

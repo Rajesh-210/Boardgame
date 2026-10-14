@@ -16,6 +16,8 @@ RUN mvn clean package -DskipTests
 
 # ===== Runtime Stage =====
 FROM eclipse-temurin:17-jre-alpine
+# Upgrade Alpine packages to receive security fixes
+RUN apk upgrade --no-cache zlib
 WORKDIR /app
 
 # Copy built jar from build stage
