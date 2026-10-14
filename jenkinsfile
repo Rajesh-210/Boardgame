@@ -14,6 +14,14 @@ pipeline {
                 sh 'docker version'
             }
         }
+        stage('Check Java Environment') {
+            steps {
+                sh '''
+                java -version
+                bash ./mvnw -version
+                '''
+           }
+        }
 
         stage('Maven Unit Tests') {
             steps {
