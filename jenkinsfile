@@ -1,0 +1,49 @@
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verify Docker') {
+            steps {
+                sh 'docker version'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t boardgame:latest .'
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                    docker rm -f boardgame-test || true
+
+                    docker run -d \
+                      --name boardgame-test \
+                      --restart unless-stopped \
+                      -p 8081:8080 \
+                      boardgame:latest
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    sleep 10
+                    docker ps --filter name=boardgame-test
+                    curl --fail --retry 5 --retry-delay 3 \
+                      http://localhost:8081/
+                '''
+            }
+        }
+    }
+}
