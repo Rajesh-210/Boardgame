@@ -15,6 +15,18 @@ pipeline {
             }
         }
 
+        stage('Maven Unit Tests') {
+            steps {
+                sh 'bash ./mvnw -B test'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t boardgame:latest .'
@@ -38,7 +50,7 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                    sleep 15
+                    sleep 10
                     docker ps --filter name=boardgame-test
                     curl --fail --retry 5 --retry-delay 3 \
                       http://localhost:8081/
