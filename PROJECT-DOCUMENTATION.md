@@ -53,3 +53,35 @@ Git, GitHub webhooks, Jenkins CI/CD, Maven, Docker, Trivy, application smoke tes
 
 ## Conclusion
 This project demonstrates automated testing, containerization, vulnerability scanning, and test deployment in a practical DevOps workflow.
+
+## 10. Architecture Diagram
+
+The following diagram illustrates the CI/CD workflow from source-code changes through testing, image security scanning, and deployment.
+
+```mermaid
+flowchart TD
+    Dev["Developer"] -->|Git push| GH["GitHub Repository"]
+    GH -->|Webhook trigger| J["Jenkins on AWS EC2"]
+
+    subgraph CI["Continuous Integration"]
+        J --> C["Checkout Source Code"]
+        C --> V["Verify Tools"]
+        V --> M["Maven Build & Tests"]
+        M --> D["Docker Image Build"]
+        D --> T["Trivy Vulnerability Scan"]
+    end
+
+    T -->|Scan passed| R["Test Candidate Image"]
+    T -->|Scan failed| F["Fail Pipeline / Report Findings"]
+
+    subgraph CD["Continuous Deployment"]
+        R --> DEP["Deploy Container"]
+        DEP --> APP["Boardgame Application"]
+        APP --> H["HTTP Health / Smoke Tests"]
+    end
+
+    H -->|Success| OK["Pipeline Success"]
+    H -->|Failure| ERR["Investigate Deployment"]
+
+    T -.-> REP["Trivy Report Archived in Jenkins"]
+```
